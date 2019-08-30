@@ -6,7 +6,7 @@ There are various parameters in both Network.py and INetwork.py scripts that can
 
 ```
 {
-    "image_dim_ordering": "th",
+    "image_data_format": "channels_first",
     "floatx": "float32",
     "backend": "theano",
     "epsilon": 1e-07
