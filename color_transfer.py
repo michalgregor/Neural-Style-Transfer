@@ -6,8 +6,12 @@ import argparse
 import os
 import numpy as np
 from scipy.interpolate import interp1d
-from scipy.misc import imread, imresize, imsave, fromimage, toimage
+from imageio import imread, imwrite
+from PIL import Image
 
+def imresize(img, size, interp=Image.BICUBIC):
+    return np.array(Image.fromarray(img).resize(size,
+        resample=interp))
 
 # Util function to match histograms
 def match_histograms(source, template):
@@ -55,7 +59,7 @@ def match_histograms(source, template):
 
 # util function to preserve image color
 def original_color_transform(content, generated, mask=None, hist_match=0, mode='YCbCr'):
-    generated = fromimage(toimage(generated, mode='RGB'), mode=mode)  # Convert to YCbCr color space
+    generated = np.array(Image.fromarray(generated, mode='RGB').convert(mode=mode))  # Convert to YCbCr color space
 
     if mask is None:
         if hist_match == 1:
@@ -75,7 +79,7 @@ def original_color_transform(content, generated, mask=None, hist_match=0, mode='
                     else:
                         generated[i, j, 1:] = content[i, j, 1:]
 
-    generated = fromimage(toimage(generated, mode=mode), mode='RGB')  # Convert to RGB color space
+    generated = np.array(Image.fromarray(generated, mode=mode).convert(mode='RGB'))  # Convert to RGB color space
     return generated
 
 
@@ -83,7 +87,7 @@ def original_color_transform(content, generated, mask=None, hist_match=0, mode='
 def load_mask(mask_path, shape):
     mask = imread(mask_path, mode="L") # Grayscale mask load
     width, height, _ = shape
-    mask = imresize(mask, (width, height), interp='bicubic').astype('float32')
+    mask = imresize(mask, (width, height), interp=Image.BICUBIC).astype('float32')
 
     # Perform binarization of mask
     mask[mask <= 127] = 0
@@ -113,11 +117,11 @@ else:
 
 image_path = os.path.splitext(args.generated_image)[0] + image_suffix
 
-generated_image = imread(args.generated_image, mode="RGB")
+generated_image = imread(args.generated_image, pilmode="RGB")
 img_width, img_height, _ = generated_image.shape
 
-content_image = imread(args.content_image, mode=mode)
-content_image = imresize(content_image, (img_width, img_height), interp='bicubic')
+content_image = imread(args.content_image, pilmode=mode)
+content_image = imresize(content_image, (img_width, img_height), interp=Image.BICUBIC)
 
 mask_transfer = args.mask is not None
 if mask_transfer:
@@ -126,7 +130,7 @@ else:
     mask_img = None
 
 img = original_color_transform(content_image, generated_image, mask_img, args.hist_match, mode=mode)
-imsave(image_path, img)
+imwrite(image_path, img)
 
 print("Image saved at path : %s" % image_path)
 
